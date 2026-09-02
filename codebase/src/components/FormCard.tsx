@@ -3,14 +3,14 @@
 import { memo } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
+import type { FormTemplate } from '@/types/api';
 
 interface FormCardProps {
-  form: any;
-  renderedAt: number;
+  form: FormTemplate;
   onClick: () => void;
 }
 
-function FormCardImpl({ form, renderedAt, onClick }: FormCardProps) {
+function FormCardImpl({ form, onClick }: FormCardProps) {
   const statusColor: Record<string, string> = {
     draft: 'bg-gray-200 text-gray-700',
     published: 'bg-green-100 text-green-700',
@@ -22,6 +22,8 @@ function FormCardImpl({ form, renderedAt, onClick }: FormCardProps) {
     addSuffix: true,
     locale: zhTW,
   });
+
+  const description = form.description ?? '';
 
   return (
     <div
@@ -41,9 +43,9 @@ function FormCardImpl({ form, renderedAt, onClick }: FormCardProps) {
           <span className="text-xs text-gray-400">v{form.version}</span>
         </div>
         <div className="text-sm text-gray-500">
-          {form.description.length > 60
-            ? `${form.description.slice(0, 60)}…`
-            : form.description}
+          {description.length > 60
+            ? `${description.slice(0, 60)}…`
+            : description || '（無描述）'}
         </div>
       </div>
       <div className="text-right text-xs text-gray-400 ml-4">
@@ -55,12 +57,15 @@ function FormCardImpl({ form, renderedAt, onClick }: FormCardProps) {
             </span>
           )}
         </div>
-        <div className="mt-1 text-[10px] text-gray-300">
-          {new Date(renderedAt).toLocaleTimeString()}
-        </div>
       </div>
     </div>
   );
 }
 
-export const FormCard = memo(FormCardImpl);
+export const FormCard = memo(FormCardImpl, (prev, next) => {
+  return (
+    prev.form.id === next.form.id &&
+    prev.form.updatedAt === next.form.updatedAt &&
+    prev.form.status === next.form.status
+  );
+});

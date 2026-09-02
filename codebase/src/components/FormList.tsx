@@ -1,11 +1,15 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FixedSizeList, ListChildComponentProps } from 'react-window';
 import { useAtom } from 'jotai';
 import { formListAtom, formFilterAtom, tenantIdAtom } from '@/lib/jotai/atoms';
 import { fetchForms } from '@/lib/api/client';
 import { FormCard } from './FormCard';
-import type { FormTemplate, FormStatus } from '@/types/api';
+import type { FormTemplate } from '@/types/api';
+
+const ROW_HEIGHT = 92;
+const LIST_HEIGHT = 600;
 
 interface FormListProps {
   initialData?: FormTemplate[];
@@ -56,9 +60,24 @@ export function FormList({ initialData }: FormListProps) {
     handleFilterChange('search', value);
   };
 
-  const handleCardClick = (formId: string) => {
+  const handleCardClick = useCallback((formId: string) => {
     window.location.href = `/forms/${formId}`;
-  };
+  }, []);
+
+  const Row = useCallback(
+    ({ index, style }: ListChildComponentProps) => {
+      const form = filteredForms[index];
+      return (
+        <div style={style} className="px-0.5">
+          <FormCard
+            form={form}
+            onClick={() => handleCardClick(form.id)}
+          />
+        </div>
+      );
+    },
+    [filteredForms, handleCardClick]
+  );
 
   if (loading) return <div className="p-8 text-gray-500">Loading...</div>;
 
@@ -91,16 +110,14 @@ export function FormList({ initialData }: FormListProps) {
         </div>
       </div>
 
-      <div className="space-y-2">
-        {filteredForms.map((form, idx) => (
-          <FormCard
-            key={idx}
-            form={form}
-            renderedAt={Date.now()}
-            onClick={() => handleCardClick(form.id)}
-          />
-        ))}
-      </div>
+      <FixedSizeList
+        height={LIST_HEIGHT}
+        itemCount={filteredForms.length}
+        itemSize={ROW_HEIGHT}
+        width="100%"
+      >
+        {Row}
+      </FixedSizeList>
     </div>
   );
 }
