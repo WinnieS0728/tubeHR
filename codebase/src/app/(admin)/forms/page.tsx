@@ -30,7 +30,7 @@ export default async function FormsPage() {
         </a>
       </div>
       <p className="text-xs text-gray-400 mb-3">tenant: {tenantId || '（未設定）'}</p>
-      <FormList initialData={data.items} />
+      <FormList initialData={data.items} serverTenantId={tenantId} />
     </div>
   );
 }

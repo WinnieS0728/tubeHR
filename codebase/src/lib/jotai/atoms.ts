@@ -4,7 +4,7 @@ import type { FormTemplate, FormListQuery } from '@/types/api';
 // 全域：當前 tenant
 export const tenantIdAtom = atom<string | null>(null);
 
-// 表單列表（注意：這個是「目前畫面顯示的」列表，可能是 filter 後的）
+// 表單列表：永遠保存 API 回傳的完整原始資料；filter 僅為 derived view
 export const formListAtom = atom<FormTemplate[]>([]);
 
 // 列表 filter

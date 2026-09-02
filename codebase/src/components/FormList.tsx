@@ -1,14 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { FixedSizeList, ListChildComponentProps } from 'react-window';
 import { useAtom } from 'jotai';
 import { formListAtom, formFilterAtom, tenantIdAtom } from '@/lib/jotai/atoms';
 import { fetchForms } from '@/lib/api/client';
 import { FormCard } from './FormCard';
-import type { FormTemplate, FormStatus } from '@/types/api';
+import type { FormTemplate } from '@/types/api';
+
+const ROW_HEIGHT = 92;
+const LIST_HEIGHT = 600;
 
 interface FormListProps {
   initialData?: FormTemplate[];
+  serverTenantId?: string | null;
 }
 
 /**
@@ -17,38 +22,71 @@ interface FormListProps {
  * 客戶 reportlab 顧問抱怨「5000+ 表單時嚴重卡頓」。
  * Vivian 加了 memo 沒解，Kevin 開了 PR #142 嘗試 virtualization。
  */
-export function FormList({ initialData }: FormListProps) {
-  const [tenantId] = useAtom(tenantIdAtom);
+export function FormList({ initialData, serverTenantId }: FormListProps) {
+  const [tenantId, setTenantId] = useAtom(tenantIdAtom);
   const [forms, setForms] = useAtom(formListAtom);
   const [filter, setFilter] = useAtom(formFilterAtom);
   const [loading, setLoading] = useState(false);
   const [searchInput, setSearchInput] = useState('');
 
+  // 同步 localStorage / SSR cookie → tenantIdAtom
   useEffect(() => {
-    if (initialData) {
+    if (typeof window === 'undefined') return;
+
+    const stored = localStorage.getItem('tenantId');
+    if (serverTenantId && !stored) {
+      localStorage.setItem('tenantId', serverTenantId);
+    }
+    const resolved = stored ?? serverTenantId ?? null;
+    if (resolved) {
+      setTenantId(resolved);
+    }
+  }, [serverTenantId, setTenantId]);
+
+  // 租戶變更時清空 stale data 並 refetch
+  useEffect(() => {
+    if (!tenantId) return;
+
+    setForms([]);
+    setLoading(true);
+
+    const canUseInitialData =
+      initialData &&
+      serverTenantId === tenantId &&
+      initialData.length > 0 &&
+      initialData.every((f) => !f.tenantId || f.tenantId === tenantId);
+
+    if (canUseInitialData) {
       setForms(initialData);
+      setLoading(false);
       return;
     }
-    setLoading(true);
+
+    let cancelled = false;
     fetchForms(filter).then((data) => {
+      if (cancelled) return;
       setForms(data.items);
       setLoading(false);
     });
-  }, []);
 
-  const handleFilterChange = (key: keyof typeof filter, value: any) => {
-    const nextFilter = { ...filter, [key]: value };
-    setFilter(nextFilter);
+    return () => {
+      cancelled = true;
+    };
+  }, [tenantId, initialData, serverTenantId, setForms]);
 
-    const filtered = forms.filter((f) => {
-      if (nextFilter.status && f.status !== nextFilter.status) return false;
-      if (nextFilter.search) {
-        const q = nextFilter.search.toLowerCase();
+  const filteredForms = useMemo(() => {
+    return forms.filter((f) => {
+      if (filter.status && f.status !== filter.status) return false;
+      if (filter.search) {
+        const q = filter.search.toLowerCase();
         if (!f.name.toLowerCase().includes(q)) return false;
       }
       return true;
     });
-    setForms(filtered);
+  }, [forms, filter.status, filter.search]);
+
+  const handleFilterChange = (key: keyof typeof filter, value: any) => {
+    setFilter({ ...filter, [key]: value });
   };
 
   const handleSearch = (value: string) => {
@@ -56,9 +94,24 @@ export function FormList({ initialData }: FormListProps) {
     handleFilterChange('search', value);
   };
 
-  const handleCardClick = (formId: string) => {
+  const handleCardClick = useCallback((formId: string) => {
     window.location.href = `/forms/${formId}`;
-  };
+  }, []);
+
+  const Row = useCallback(
+    ({ index, style }: ListChildComponentProps) => {
+      const form = filteredForms[index];
+      return (
+        <div style={style} className="px-0.5">
+          <FormCard
+            form={form}
+            onClick={() => handleCardClick(form.id)}
+          />
+        </div>
+      );
+    },
+    [filteredForms, handleCardClick]
+  );
 
   if (loading) return <div className="p-8 text-gray-500">Loading...</div>;
 
@@ -84,20 +137,21 @@ export function FormList({ initialData }: FormListProps) {
           <option value="deprecated">已棄用</option>
         </select>
         <div className="text-sm text-gray-500 self-center">
-          共 {forms.length} 筆
+          共 {filteredForms.length} 筆
+          {filteredForms.length !== forms.length && (
+            <span className="text-gray-400"> / {forms.length}</span>
+          )}
         </div>
       </div>
 
-      <div className="space-y-2">
-        {forms.map((form, idx) => (
-          <FormCard
-            key={idx}
-            form={form}
-            renderedAt={Date.now()}
-            onClick={() => handleCardClick(form.id)}
-          />
-        ))}
-      </div>
+      <FixedSizeList
+        height={LIST_HEIGHT}
+        itemCount={filteredForms.length}
+        itemSize={ROW_HEIGHT}
+        width="100%"
+      >
+        {Row}
+      </FixedSizeList>
     </div>
   );
 }
