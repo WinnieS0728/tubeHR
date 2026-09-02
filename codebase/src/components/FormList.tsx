@@ -13,6 +13,7 @@ const LIST_HEIGHT = 600;
 
 interface FormListProps {
   initialData?: FormTemplate[];
+  serverTenantId?: string | null;
 }
 
 /**
@@ -21,24 +22,57 @@ interface FormListProps {
  * 客戶 reportlab 顧問抱怨「5000+ 表單時嚴重卡頓」。
  * Vivian 加了 memo 沒解，Kevin 開了 PR #142 嘗試 virtualization。
  */
-export function FormList({ initialData }: FormListProps) {
-  const [tenantId] = useAtom(tenantIdAtom);
+export function FormList({ initialData, serverTenantId }: FormListProps) {
+  const [tenantId, setTenantId] = useAtom(tenantIdAtom);
   const [forms, setForms] = useAtom(formListAtom);
   const [filter, setFilter] = useAtom(formFilterAtom);
   const [loading, setLoading] = useState(false);
   const [searchInput, setSearchInput] = useState('');
 
+  // 同步 localStorage / SSR cookie → tenantIdAtom
   useEffect(() => {
-    if (initialData) {
+    if (typeof window === 'undefined') return;
+
+    const stored = localStorage.getItem('tenantId');
+    if (serverTenantId && !stored) {
+      localStorage.setItem('tenantId', serverTenantId);
+    }
+    const resolved = stored ?? serverTenantId ?? null;
+    if (resolved) {
+      setTenantId(resolved);
+    }
+  }, [serverTenantId, setTenantId]);
+
+  // 租戶變更時清空 stale data 並 refetch
+  useEffect(() => {
+    if (!tenantId) return;
+
+    setForms([]);
+    setLoading(true);
+
+    const canUseInitialData =
+      initialData &&
+      serverTenantId === tenantId &&
+      initialData.length > 0 &&
+      initialData.every((f) => !f.tenantId || f.tenantId === tenantId);
+
+    if (canUseInitialData) {
       setForms(initialData);
+      setLoading(false);
       return;
     }
-    setLoading(true);
+
+    let cancelled = false;
     fetchForms(filter).then((data) => {
+      if (cancelled) return;
       setForms(data.items);
       setLoading(false);
     });
-  }, []);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [tenantId, initialData, serverTenantId, setForms]);
 
   const filteredForms = useMemo(() => {
     return forms.filter((f) => {
