@@ -38,10 +38,10 @@
 
 | # | 取捨 | 選了什麼 | 為什麼 | 放棄的代價 |
 |---|------|---------|-------|-----------|
-| 1 | Request changes vs Approve with comments | Request changes | 有 build blocker + 正確性風險 | Kevin 多一輪修改 |
-| 2 | 公開 review 講多少 | Must-fix 全講 + nice-to-have 標清楚 | 透明但分優先級，不 overwhelm | 評論較長 |
+| 1 | Request changes vs Approve with comments | Request changes | PR 有 build blocker + 自引入問題 | Kevin 多一輪修改 |
+| 2 | 公開 review 講多少 | PR scope 照實講 + 001 項目標註 follow-up | 用戶指示：001 有排程，不在此 PR 擋 | filter 等留到 001 |
 | 3 | 是否直接在 codebase 套 PR | 不套 | 任務 focus 是 review deliverables | 沒有 live demo |
-| 4 | filter bug 算 must-fix 嗎 | 是（在此 PR 或明確 follow-up） | Vivian/atom 註解/客訴都指向同一根因 | scope 變大 |
+| 4 | filter bug 算 must-fix 嗎 | 否 — follow BACKLOG-001 | 001 已有處理時程 | 此 PR 只解 perf |
 | 5 | 是否順手做 BACKLOG-002 | 不做，只 note 給 David | 超出 003 scope | approval bug 繼續 pending |
 
 ---
@@ -68,7 +68,7 @@
 | # | 問題 | 優先級 | 我做了嗎 | 驗證過是真問題嗎？ | 不做的理由 |
 |---|------|-------|---------|-------------------|-----------|
 | 1 | `react-window` 未安裝 | P0 | Review 指出 | ✅ 讀 package.json | — |
-| 2 | filter 覆寫 formListAtom | P0 | Review 要求修 | ✅ 讀 code + atom 註解 + BACKLOG-001 症狀 | — |
+| 2 | filter 覆寫 formListAtom | P0 | 標註 follow 001，不擋 PR | ✅ 讀 code + atom 註解 + BACKLOG-001 症狀 | 001 已有排程 |
 | 3 | 自訂 memo compare 漏欄位 | P1 | Review 要求移除/修 | ✅ 邏輯分析 | — |
 | 4 | IntersectionObserver 無功能 | P2 | Review 建議移除 | ✅ 讀 PR diff | — |
 | 5 | tenant 切換資料殘留 | P1 | Note 給 David | ✅ team-chat #4801 + tenantId 未使用 | 超出 PR scope |
