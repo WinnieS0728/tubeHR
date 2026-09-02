@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useAtom } from 'jotai';
 import { formListAtom, formFilterAtom, tenantIdAtom } from '@/lib/jotai/atoms';
 import { fetchForms } from '@/lib/api/client';
@@ -36,19 +36,19 @@ export function FormList({ initialData }: FormListProps) {
     });
   }, []);
 
-  const handleFilterChange = (key: keyof typeof filter, value: any) => {
-    const nextFilter = { ...filter, [key]: value };
-    setFilter(nextFilter);
-
-    const filtered = forms.filter((f) => {
-      if (nextFilter.status && f.status !== nextFilter.status) return false;
-      if (nextFilter.search) {
-        const q = nextFilter.search.toLowerCase();
+  const filteredForms = useMemo(() => {
+    return forms.filter((f) => {
+      if (filter.status && f.status !== filter.status) return false;
+      if (filter.search) {
+        const q = filter.search.toLowerCase();
         if (!f.name.toLowerCase().includes(q)) return false;
       }
       return true;
     });
-    setForms(filtered);
+  }, [forms, filter.status, filter.search]);
+
+  const handleFilterChange = (key: keyof typeof filter, value: any) => {
+    setFilter({ ...filter, [key]: value });
   };
 
   const handleSearch = (value: string) => {
@@ -84,12 +84,15 @@ export function FormList({ initialData }: FormListProps) {
           <option value="deprecated">已棄用</option>
         </select>
         <div className="text-sm text-gray-500 self-center">
-          共 {forms.length} 筆
+          共 {filteredForms.length} 筆
+          {filteredForms.length !== forms.length && (
+            <span className="text-gray-400"> / {forms.length}</span>
+          )}
         </div>
       </div>
 
       <div className="space-y-2">
-        {forms.map((form, idx) => (
+        {filteredForms.map((form, idx) => (
           <FormCard
             key={idx}
             form={form}
