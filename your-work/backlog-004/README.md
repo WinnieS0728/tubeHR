@@ -1,6 +1,7 @@
 # BACKLOG-004：員工離職交接清單 — 前端可行性評估
 
 **分支**：`backlog/004-offboarding-checklist`  
+**PR**：[#4 — BACKLOG-004：員工離職交接清單 — 前端可行性評估](https://github.com/WinnieS0728/tubeHR/pull/4)  
 **狀態**：規劃完成，待 PM / 後端對齊  
 **產出日期**：2026-09-02（精簡版）
 
