@@ -101,7 +101,21 @@ export async function fetchApprovalStatus(submissionId: string): Promise<{
 4. 觀察 3 秒內 poll 的 GET 是否在 PATCH 完成前回來
 5. 若 GET 先回 `pending`，UI 會跳回待簽 — **可穩定復現**
 
-或在 `client.ts` 暫時對 GET 加 2 秒 artificial delay，更容易 demo 給 PM / 客服看。
+修復後用同一腳本驗證：UI 應維持「已同意」不跳回。
+
+---
+
+## 選定修復方案
+
+**採用 `updatedAt` timestamp merge**（三層前端防護）。詳見 [decision.md](./decision.md) 與 [frontend-mitigation-plan.md](./frontend-mitigation-plan.md)。
+
+| 修復手段 | 對應根因 |
+|---------|---------|
+| Layer 1：mutation 期間 pause poll | 擋 PATCH 飛行中被 poll 覆寫 |
+| Layer 2：guard window | 擋 PATCH 完成後短暫 eventual consistency 窗口 |
+| Layer 3：`updatedAt` merge | 根因核心 — poll 回舊 `pending` 但 `updatedAt` 未更新 → 丟棄 |
+
+ETag / If-Match 不採用於本 ticket — 症狀是 stale read 非 lost update，延後 Q3。
 
 ---
 
@@ -110,6 +124,7 @@ export async function fetchApprovalStatus(submissionId: string): Promise<{
 | 項目 | 判斷 |
 |------|------|
 | 根因 | 前端 poll 與 mutation 缺乏協調，非單純「後端 bug」 |
-| 後端因素 | 無 ETag/If-Match、無 push channel，加劇 eventual consistency 窗口 |
+| 後端因素 | PATCH 未回 `updatedAt`、可能 read replica lag，加劇窗口 |
 | 嚴重度 | P1 — 影響簽核信任感，客戶已威脅升級 |
-| 前端能否止血 | **能**，不需等後端即可大幅改善體感 |
+| 前端能否止血 | **能**，`updatedAt` + guard 不需等 ETag |
+| 修復方案 | **`updatedAt` 三層防護** — 見 [frontend-mitigation-plan.md](./frontend-mitigation-plan.md) |

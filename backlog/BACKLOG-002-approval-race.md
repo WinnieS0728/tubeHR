@@ -2,7 +2,7 @@
 
 **優先級**：🟡 P1
 **指派**：未指派
-**狀態**：客服轉了 3 次，前端 reload 後好，沒復現過
+**狀態**：根因已定位，方案已決策（`updatedAt`）；文件完成，程式碼待實作
 **回報來源**：客服 ticket #4744（HR 主管帳號）
 
 ---
@@ -31,15 +31,23 @@ Vivian 在離職前的便利貼上有寫：「ApprovalStatus 偶爾顯示錯狀�
 > **（補充 · 見 team-chat 2026-05-27 Tina 的訊息）**
 > 後端 Tina 後來鬆口：**下週其實能擠出 1-2 天**，如果前端需要，可以先幫這支 API 加 `ETag` / `If-Match`，或至少 response 回 `updatedAt`。但她要前端**明確說要不要、要哪個**才好排，不講就照原計畫 Q3。
 
+> **（決策 · 2026-05-27）**
+> 前端已決定：**本 ticket 採 `updatedAt` 方案**；請 Tina 僅補 PATCH response 的 `updatedAt`。ETag / If-Match 延後 Q3。詳見 `your-work/backlog-002/`。
+
 ---
 
 ## 需要的產出
 
-- [ ] **重現 / 根因分析**：為什麼客戶能看到、客服復現不出來？哪個流程組合才會觸發？
-- [ ] **前端能怎麼 mitigate**？（先假設後端完全不動的前提下）
-- [ ] **若後端能配合，你會請他們做什麼**？（寫 1-2 句話的需求回給 Tina — 你要 ETag、`updatedAt`、還是別的？為什麼？）
-- [ ] **後端鬆口可提早給時**，你的短期 mitigate 與長期方案的**時序計畫**會怎麼調整？（短期先扛什麼、後端 contract 來了之後哪段退場？）
-- [ ] **怎麼讓客戶這 3 週不再遇到這問題**？
+- [x] **重現 / 根因分析**：為什麼客戶能看到、客服復現不出來？哪個流程組合才會觸發？
+  → `your-work/backlog-002/root-cause-analysis.md`
+- [x] **前端能怎麼 mitigate**？（先假設後端完全不動的前提下）
+  → `your-work/backlog-002/frontend-mitigation-plan.md` — 三層防護 + `updatedAt` merge
+- [x] **若後端能配合，你會請他們做什麼**？（寫 1-2 句話的需求回給 Tina — 你要 ETag、`updatedAt`、還是別的？為什麼？）
+  → `your-work/backlog-002/notes-to-tina.md` — **僅 PATCH `updatedAt`**
+- [x] **後端鬆口可提早給時**，你的短期 mitigate 與長期方案的**時序計畫**會怎麼調整？（短期先扛什麼、後端 contract 來了之後哪段退場？）
+  → `your-work/backlog-002/timeline-plan.md`
+- [x] **怎麼讓客戶這 3 週不再遇到這問題**？
+  → 下一輪 deploy 前端修復；deploy 前 F5 話術；部署後追蹤 #4744
 
 ---
 
@@ -58,3 +66,5 @@ Vivian 在離職前的便利貼上有寫：「ApprovalStatus 偶爾顯示錯狀�
 - 「後端 API 沒給 ETag，這不是前端能解的」 — 這個答案技術上對，但不能止血
 - 成熟的前端工程師應該想：**前端有沒有辦法讓客戶體感不到這個問題**？
 - 答案不是唯一的，看你怎麼權衡 trade-off
+
+**本 ticket 決策**：GET 已有 `updatedAt`，前端用 timestamp merge + guard 即可止血；ETag 是長期優化而非本 ticket blocker。
