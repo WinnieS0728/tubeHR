@@ -2,6 +2,8 @@
 
 本議題是**多個獨立 bug 疊加**，不是單一效能問題。以下分開說明。
 
+> **修復順序**（因時間限制分三階段交付）：Step 1 → Bug A（filter 覆寫）｜Step 2 → Bug B + C + D（virtualization + memo）｜Step 3 → Bug E（租戶切換，時間允許）。詳見 `fix-approach.md`。
+
 ---
 
 ## Bug A：Filter 覆寫資料來源（正確性 · P0）

@@ -2,7 +2,7 @@
 
 **優先級**：🔴 P0
 **指派**：未指派
-**狀態**：客戶持續抱怨，Vivian 嘗試過修但沒解
+**狀態**：根因已分析；分三階段修復中（Step 1 待實作）
 **回報來源**：客戶 reportlab（S Tier 訂閱）顧問 + 客服 ticket #4821, #4837, #4856
 
 ---
@@ -35,10 +35,37 @@ Kevin（另一位前端）開了 **PR #142** 嘗試 virtualization（見 `codeba
 
 ## 需要的產出
 
-- [ ] **根因分析**：哪些是不同的 bug？分別在哪？（提示：可能不只一個）
-- [ ] **修復方案**：哪些必修、哪些先繞過、哪些 punt 到下一輪？
-- [ ] **客戶溝通摘要**（給 PM 用，非技術語言，1 段就好）
-- [ ] **驗證計畫**：你怎麼確認真的修好了？
+- [x] **根因分析**：哪些是不同的 bug？分別在哪？→ 見 `your-work/backlog-001/root-cause-analysis.md`
+- [x] **修復方案**：哪些必修、哪些先繞過、哪些 punt 到下一輪？→ 見 `your-work/backlog-001/fix-approach.md`
+- [x] **客戶溝通摘要**（給 PM 用，非技術語言）→ 見 `your-work/backlog-001/customer-communication.md`（分 step 版本）
+- [x] **驗證計畫**：你怎麼確認真的修好了？→ 見 `your-work/backlog-001/verification-plan.md`
+
+---
+
+## 分階段執行計畫（因時間限制）
+
+| Step | 範圍 | Bug | 狀態 |
+|------|------|-----|------|
+| **1** | Filter 覆寫修正 | A | 待實作 |
+| **2** | Virtualization + memo | B, C, D | 待實作 |
+| **3** | 租戶切換 stale data | E | 待實作（時間允許） |
+
+**Step 1 — Filter 覆寫（Bug A）**
+- `formListAtom` 只存原始資料；`useMemo` 衍生 `filteredForms`；`handleFilterChange` 只改 `formFilterAtom`
+- 檔案：`FormList.tsx`, `atoms.ts`
+- merge 後即可對外溝通「篩選後資料消失」已修
+
+**Step 2 — Virtualization + Memo（Bug B + C + D）**
+- 引入 `react-window`；移除 `renderedAt` / `Date.now()`；修正 `key` 用法
+- 檔案：`FormList.tsx`, `FormCard.tsx`, `package.json`
+- Kevin PR #142 可參考方向，不直接 merge
+
+**Step 3 — 租戶切換（Bug E，時間允許）**
+- `page.tsx` 傳 `serverTenantId`；sync tenant；`useEffect` deps 含 `tenantId`
+- 檔案：`FormList.tsx`, `page.tsx`
+- 若來不及：release note 註明切換租戶後建議 full reload
+
+詳細方案與 PR 切法見 `your-work/backlog-001/fix-approach.md`。
 
 ---
 
